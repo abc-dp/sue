@@ -15,7 +15,7 @@ import (
 		path: *["sops", "dec"] | _
 		expression: *strings.Join(path, ".") | _
 	}
-	#local: {
+	_local: {
 		dec: {
 			filename: strings.Replace(#var.enc.filename, ".enc.", ".dec.", 1)
 			imported: strings.Join([filename, "cue"], ".")
@@ -24,7 +24,7 @@ import (
 	}
 	"sue-encrypt": {
 		encrypt: exec.Run & {
-			cmd:    "sops --encrypt \(#local.dec.filename)"
+			cmd:    "sops --encrypt \(_local.dec.filename)"
 			stdout: string
 		}
 		output: file.Create & {
@@ -33,7 +33,7 @@ import (
 		}
 		print: cli.Print & {
 			$after: output
-			text:   "Encrypted \(#local.dec.filename) to \(#var.enc.filename)"
+			text:   encrypt.cmd
 		}
 	}
 	sue: {
@@ -42,12 +42,12 @@ import (
 			stdout: string
 		}
 		output: file.Create & {
-			filename: #local.dec.filename
+			filename: _local.dec.filename
 			contents: decrypt.stdout
 		}
 		import: exec.Run & {
 			$after: output
-			cmd:    "cue import \(output.filename) \(#local.path) --package \(#var.package) --force --outfile \(#local.dec.imported)"
+			cmd:    "cue import \(output.filename) \(_local.path) --package \(#var.package) --force --outfile \(_local.dec.imported)"
 		}
 		export: exec.Run & {
 			$after: import
@@ -56,6 +56,9 @@ import (
 		remove: file.RemoveAll & {
 			$after: import
 			path:   output.filename
+		}
+		print: cli.Print & {
+			text: strings.Join([decrypt.cmd, import.cmd, export.cmd], "\n")
 		}
 	}
 }
