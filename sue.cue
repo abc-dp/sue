@@ -51,7 +51,7 @@ import (
 		}
 		export: exec.Run & {
 			$after: import
-			cmd:    "cue export --package \(#var.package) --expression \(#var.expression)"
+			cmd:    "cue export --package \(#var.package) --expression \(#var.expression) --outfile \(_local.dec.filename)"
 		}
 		remove: file.RemoveAll & {
 			$after: import
