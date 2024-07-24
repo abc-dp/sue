@@ -2,7 +2,7 @@ load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
 
 genrule(
-    name = "version",
+    name = "version_grep",
     srcs = [],
     outs = ["version"],
     cmd = "$(CUE_BIN) version | grep 'cue version' > $@",
@@ -18,7 +18,35 @@ write_file(
 )
 
 diff_test(
-    name = "diff_test",
-    file1 = ":version",
+    name = "version_test",
+    file1 = ":version_grep",
     file2 = ":verison_golden",
+)
+
+genrule(
+    name = "dec",
+    srcs = [
+        "tests.cue",
+        "tests.enc.yaml",
+        "tests_tool.cue",
+        "//:sue.cue",
+        "//cue.mod:module.cue",
+    ],
+    outs = ["tests.dec.yaml"],
+    cmd = "cd tests; ../$(CUE_BIN) cmd sue",
+    toolchains = [
+        "@rules_cue//cue:resolved_toolchain",
+    ],
+)
+
+write_file(
+    name = "dec_golden",
+    out = "tests.dec.yaml.golden",
+    content = ["key: value\nsecretKey: secret value"],
+)
+
+diff_test(
+    name = "dec_test",
+    file1 = ":dec",
+    file2 = ":dec_golden",
 )
